@@ -29,3 +29,15 @@ tower-of-hanoi: $(SRCS)
 clean:
 	@echo "clean"
 	$(Q)rm -f $(BIN)
+
+.PHONY: help
+help:
+	@echo "Usage:"
+	@echo "    make         Creates the executable tower-of-hanoi"
+	@echo "    make clean   Deletes the executable"
+	@echo "    make help    Prints this text"
+	@echo "Options:"
+	@echo "    V=1          Enable verbose mode"
+	@echo "    D=1          Compile with debug flags and optimizations disabled"
+	@echo "    G=1          Compile with debug flags and optimizations enabled"
+	@echo "    Example: make V=1 D=1"
