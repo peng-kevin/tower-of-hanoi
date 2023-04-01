@@ -42,21 +42,24 @@ int get_num_layers_from_user() {
     while(true) {
         printf("Enter the number of layers: ");
         if (fgets(buf, buf_size, stdin) == NULL) {
+            // Read failed or reached end of file
             if (ferror(stdin)) {
                 perror("Error");
             }
             return -1;
         }
-        // strip trailing newline if necessary
+        // Strip trailing newline if necessary
         int length = strlen(buf);
         if (length > 0 && buf[length - 1] == '\n') {
             buf[length -1] = '\0';
         }
         if (buf[0] == '\0') {
+            // Skip empty lines
             continue;
         }
         int num_layers = string_to_num_layers(buf);
         if (num_layers == -1) {
+            // Failed to convert to int
             continue;
         }
         return num_layers;
