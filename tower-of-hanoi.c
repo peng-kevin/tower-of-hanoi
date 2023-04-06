@@ -116,6 +116,8 @@ struct ColorMap load_colormap(const char *filename) {
         cmap.colors[i].b = b;
         i++;
     }
+    fclose(file);
+    
     // Shrink the array if necessary
     if (i != arraysize) {
         // In case realloc fails
@@ -396,6 +398,7 @@ int main(int argc, char* argv[]) {
     // Initialize poles
     struct Pole poles[NUM_POLES];
     initialize_poles(poles, num_layers, colormap);
+    destroy_colormap(colormap);
 
     render(poles, num_layers);
     solve_hanoi(poles, num_layers);
