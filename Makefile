@@ -6,11 +6,11 @@ CFLAGS := -Wall -Wextra -Werror -pedantic-errors
 # make D=1 to compile with debug flags
 # make G=1 to compile with debug flags and optimizations	
 ifeq ($(D), 1)
-CFLAGS +=  -g -O0
+CFLAGS += -g -O0
 else ifeq ($(G), 1)
-CFLAGS += -g -O3 -march=native
+CFLAGS += -g -O3
 else
-CFLAGS +=  -O3 -march=native
+CFLAGS += -O3
 endif
 
 # make V=1 to compile in verbose mode
