@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <unistd.h>
 
 // Strings used for rendering
 #define EMPTY " "
@@ -34,15 +35,32 @@ struct ColorMap {
     int length;
 };
 
+/*
+ * Stores information about a single disk
+ */
 struct Disk {
     int size; // The size of the disk
     struct Color color; // The color of the disk
 };
 
+/*
+ * Stores information about a single pole
+ */
 struct Pole {
     int size; // The max size of the pole
     int num_disk; // The current number of disks on the pole
     struct Disk *disks; // Array storing the disk with lower ones closer to bottom.
+};
+
+/*
+ * Stores information about the overall state of the game
+ */
+struct GameState {
+    struct Pole *poles; // Points to array of poles
+    int num_layers; // The total number of layers
+    // Tracks the number of moves made so far
+    // It is a long due to the exponential growth of the number of moves.
+    long num_moves; 
 };
 
 /*
@@ -182,9 +200,9 @@ void render_layer_pole(struct Pole pole, int num_layers, int layer) {
 /*
  * Renders a single layer of poles. layer is zero indexed
  */
-void render_layer(struct Pole poles[NUM_POLES], int num_layers, int layer) {
+void render_layer(struct GameState game_state, int layer) {
     for (int i = 0; i < NUM_POLES; i++) {
-        render_layer_pole(poles[i], num_layers, layer);
+        render_layer_pole(game_state.poles[i], game_state.num_layers, layer);
         if (i != NUM_POLES - 1) {
             print_repeat(EMPTY, SPACE_BETWEEN_POLES);
         }
@@ -192,14 +210,35 @@ void render_layer(struct Pole poles[NUM_POLES], int num_layers, int layer) {
 }
 
 /*
- * Renders the number of steps and poles
+ * Clears the previosly drawn image
  */
-void render( struct Pole poles[NUM_POLES], int num_layers) {
-    for (int i = num_layers - 1; i >= 0; i--) {
-        render_layer(poles, num_layers, i);
+void erase_drawing(struct GameState game_state) {
+    for (int i = 0; i < game_state.num_layers + 1; i++) {
+        printf("\033[A");
+        printf("\r");
+        printf("\033[J");
+    }
+}
+
+
+/*
+ * Draws the number of steps and poles
+ */
+void draw(struct GameState game_state) {
+    printf("Moves: %ld / %ld\n", game_state.num_moves, (1l << (long) game_state.num_layers) - 1l);
+    for (int i = game_state.num_layers - 1; i >= 0; i--) {
+        render_layer(game_state, i);
         printf("\n");
     }
-    printf("\n\n");
+    sleep(1);
+}
+
+/*
+ * Replaces the previous drawing
+ */
+void redraw(struct GameState game_state) {
+    erase_drawing(game_state);
+    draw(game_state);
 }
 
 /*
@@ -326,48 +365,62 @@ int get_spare(int pole1, int pole2) {
 
 /*
  * Moves the top disk of src to dest
+ *
+ * If the attempted move is invalid, print an error message and exit the program.
  */
-void move_disk(struct Pole *src, struct Pole *dest) {
-    if (src->num_disk <= 0) {
-        fprintf(stderr, "Error: src pole is empty\n");
-        return;
+void move_disk(struct GameState *game_state, int src, int dest) {
+    struct Pole *src_pole = &game_state->poles[src];
+    struct Pole *dest_pole = &game_state->poles[dest];
+    // Ensure that the src pole is not empty and the dest pole is not full for debugging.
+    // Should not occur
+    if (src_pole->num_disk <= 0) {
+        redraw(*game_state);
+        fprintf(stderr, "Error: src pole (%d) is empty\n", src);
+        exit(1);
     }
-    if (dest->num_disk >= dest->size) {
-        fprintf(stderr, "Error: dest pole is full\n");
-        return;
+    if (dest_pole->num_disk >= dest_pole->size) {
+        redraw(*game_state);
+        fprintf(stderr, "Error: dest pole (%d) is full\n", dest);
+        exit(1);
     }
-    dest->disks[dest->num_disk] = src->disks[src->num_disk - 1];
-    dest->num_disk++;
-    src->num_disk--;
 
-    // Ensure correctness for debugging. Should not occur.
-    if (dest->num_disk > 1) {
-        int top_size = dest->disks[dest->num_disk - 1].size;
-        int under_top_size = dest->disks[dest->num_disk - 2].size;
+    // Move the disk
+    dest_pole->disks[dest_pole->num_disk] = src_pole->disks[src_pole->num_disk - 1];
+    dest_pole->num_disk++;
+    src_pole->num_disk--;
+    game_state->num_moves++;
+
+    // Ensure there is not a larger piece on a smaller piece for debugging.
+    // Should not occur.
+    if (dest_pole->num_disk > 1) {
+        int top_size = dest_pole->disks[dest_pole->num_disk - 1].size;
+        int under_top_size = dest_pole->disks[dest_pole->num_disk - 2].size;
         if (top_size > under_top_size) {
+            redraw(*game_state);
             fprintf(stderr, "Error: attempted illegal move. This should not occur");
             exit(1);
         }
     }
+
+    redraw(*game_state);
 }
 
 /*
  * Move a stack of "size" disks from the src to dest pole. Renders each step.
  */
-void move_stack(struct Pole poles[NUM_POLES], int num_layers, int size, int src, int dest) {
+void move_stack(struct GameState *game_state, int size, int src, int dest) {
     if (size == 1) {
-        move_disk(&poles[src], &poles[dest]);
-        render(poles, num_layers);
+        move_disk(game_state, src, dest);
     } else {
         int spare = get_spare(src, dest);
-        move_stack(poles, num_layers, size - 1, src, spare);
-        move_stack(poles, num_layers, 1, src, dest);
-        move_stack(poles, num_layers, size - 1, spare, dest);
+        move_stack(game_state, size - 1, src, spare);
+        move_stack(game_state, 1, src, dest);
+        move_stack(game_state, size - 1, spare, dest);
     }
 }
 
-void solve_hanoi(struct Pole poles[NUM_POLES], int num_layers) {
-    move_stack(poles, num_layers, num_layers, 0, NUM_POLES - 1);
+void solve_hanoi(struct GameState *game_state) {
+    move_stack(game_state, game_state->num_layers, 0, NUM_POLES - 1);
 }
 
 int main(int argc, char* argv[]) {
@@ -400,8 +453,14 @@ int main(int argc, char* argv[]) {
     initialize_poles(poles, num_layers, colormap);
     destroy_colormap(colormap);
 
-    render(poles, num_layers);
-    solve_hanoi(poles, num_layers);
+    // Initialize game state
+    struct GameState game_state;
+    game_state.poles = poles;
+    game_state.num_layers = num_layers;
+    game_state.num_moves = 0;
+
+    draw(game_state);
+    solve_hanoi(&game_state);
 
     destroy_poles(poles);
 }
