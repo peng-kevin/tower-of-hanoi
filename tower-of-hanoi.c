@@ -441,7 +441,7 @@ enable_virtual_terminal_windows() {
         printf("Error enabling enabling virtual terminal\n");
         return;
     }
-    if (!SetConsoleMode(out, mode & ENABLE_PROCESSED_OUTPUT & ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+    if (!SetConsoleMode(out, mode | ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
         printf("Error enabling enabling virtual terminal\n");
         return;
     }
