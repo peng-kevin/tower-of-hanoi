@@ -4,17 +4,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <unistd.h>
+#include <time.h>
 
 // Strings used for rendering
 #define EMPTY " "
-#define DISK "#"
-#define ROD "|"
+#define DISK "█"
+#define ROD "│"
 
 #define NUM_POLES 3
 #define SPACE_BETWEEN_POLES 3 // The number of empty spaces between poles when rendering
-#define ARRAY_RESIZE_INCREMENT 256; // For dynamic array allocation
+#define ANIMATION_DELAY_MS 200 // Delay between animation draws in milliseconds
+#define MS_TO_NS_MULTIPLIER 1000000 // 1 millisecond = 1,000,000 nanoseconds
+#define S_TO_MS_MULTIPLIER 1000 // 1 seconds = 1,000 milliseconds
 
+#define ARRAY_RESIZE_INCREMENT 256; // For dynamic array allocation
 #define COLORMAP_FILE "CET-I1.csv" // The csv file containing the colormap used
 
 
@@ -225,12 +228,16 @@ void erase_drawing(struct GameState game_state) {
  * Draws the number of steps and poles
  */
 void draw(struct GameState game_state) {
-    printf("Moves: %ld / %ld\n", game_state.num_moves, (1l << (long) game_state.num_layers) - 1l);
+    printf("Moves: %ld / %ld\n", game_state.num_moves, (1L << (long) game_state.num_layers) - 1L);
     for (int i = game_state.num_layers - 1; i >= 0; i--) {
         render_layer(game_state, i);
         printf("\n");
     }
-    sleep(1);
+    // Sleep to show the frame
+    struct timespec tv;
+    tv.tv_sec = ANIMATION_DELAY_MS / S_TO_MS_MULTIPLIER;
+    tv.tv_nsec = (ANIMATION_DELAY_MS % S_TO_MS_MULTIPLIER) * MS_TO_NS_MULTIPLIER;
+    nanosleep(&tv, NULL);
 }
 
 /*
