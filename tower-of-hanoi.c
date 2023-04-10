@@ -3,8 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <time.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 // Strings used for rendering
 #define EMPTY " "
@@ -426,11 +429,33 @@ void move_stack(struct GameState *game_state, int size, int src, int dest) {
     }
 }
 
+#ifdef _WIN32
+/*
+ * Windows shells do not enable virtual terminal by default so this is necessary
+ * to ensure that the colors are printed correctly.
+ */
+enable_virtual_terminal_windows() {
+    HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD mode;
+    if (!GetConsoleMode(out, mode)) {
+        printf("Error enabling enabling virtual terminal\n");
+        return;
+    }
+    if (!SetConsoleMode(out, mode & ENABLE_PROCESSED_OUTPUT & ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+        printf("Error enabling enabling virtual terminal\n");
+        return;
+    }
+}
+#endif
+
 void solve_hanoi(struct GameState *game_state) {
     move_stack(game_state, game_state->num_layers, 0, NUM_POLES - 1);
 }
 
 int main(int argc, char* argv[]) {
+#ifdef _WIN32
+    enable_virtual_terminal_windows();
+#endif
     if (argc > 2) {
         printf("Usage: %s [num_layers]\n", argv[0]);
         exit(1);
