@@ -439,7 +439,7 @@ int main(int argc, char* argv[]) {
     if (num_layers == -1) {
         exit(1);
     }
-    printf("num_layers: %d\n", num_layers);
+    printf("Number of layers: %d\n", num_layers);
 
     // Load colormap
     struct ColorMap colormap = load_colormap(COLORMAP_FILE);
