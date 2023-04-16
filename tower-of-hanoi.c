@@ -434,7 +434,7 @@ void move_stack(struct GameState *game_state, int size, int src, int dest) {
  * Windows shells do not enable virtual terminal by default so this is necessary
  * to ensure that the colors are printed correctly.
  */
-enable_virtual_terminal_windows() {
+void enable_virtual_terminal_windows() {
     HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
     DWORD mode;
     if (!GetConsoleMode(out, mode)) {
