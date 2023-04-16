@@ -454,6 +454,7 @@ void solve_hanoi(struct GameState *game_state) {
 
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
+    printf("Running WIN32\n");
     enable_virtual_terminal_windows();
 #endif
     if (argc > 2) {
